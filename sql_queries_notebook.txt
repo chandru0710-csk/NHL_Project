@@ -1,0 +1,138 @@
+SQL QUERIES USED IN NHL_PROJECT.IPYNB
+======================================
+
+%s and named percent fields are safe parameters supplied by Python.
+
+1. Create database
+Description: Creates the NHL database if it does not exist.
+CREATE DATABASE IF NOT EXISTS nhl_project;
+
+2. Create teams table
+Description: Creates the table for team information.
+CREATE TABLE teams (
+    team_id INT AUTO_INCREMENT PRIMARY KEY,
+    team_abbrev VARCHAR(10) UNIQUE,
+    team_name VARCHAR(100),
+    conference_name VARCHAR(100),
+    division_name VARCHAR(100),
+    logo_url TEXT
+);
+
+3. Insert team records
+Description: Inserts one team record.
+INSERT INTO teams (team_abbrev, team_name, conference_name, division_name, logo_url)
+VALUES (%s, %s, %s, %s, %s);
+
+4. Load game statistics
+Description: Replaces game_stats with the pandas DataFrame.
+df.to_sql('game_stats', if_exists='replace', index=False, con=engine)
+
+5. Load skater statistics
+Description: Replaces skater_stats with the pandas DataFrame.
+df.to_sql('skater_stats', if_exists='replace', index=False, con=engine)
+
+6. Load goalie statistics
+Description: Replaces goalie_season_stats with the pandas DataFrame.
+df.to_sql('goalie_season_stats', if_exists='replace', index=False, con=engine)
+
+7. Create standings table
+Description: Creates the table for team season records.
+CREATE TABLE standings (
+    standing_id INT AUTO_INCREMENT PRIMARY KEY,
+    team_id INT,
+    season VARCHAR(20),
+    games_played INT,
+    wins INT,
+    losses INT,
+    ot_losses INT,
+    points INT,
+    goals_for INT,
+    goals_against INT,
+    home_wins INT,
+    away_wins INT,
+    streak_type VARCHAR(20),
+    streak_count INT,
+    FOREIGN KEY (team_id) REFERENCES teams(team_id)
+);
+
+8. Find team ID
+Description: Finds a team ID from its abbreviation.
+SELECT team_id FROM teams WHERE team_abbrev = %s;
+
+9. Insert standings records
+Description: Inserts one team season record.
+INSERT INTO standings (
+    team_id, season, games_played, wins, losses, ot_losses,
+    points, goals_for, goals_against, home_wins, away_wins,
+    streak_type, streak_count
+)
+VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s);
+
+10. Create players table
+Description: Creates the table for player information.
+CREATE TABLE IF NOT EXISTS players (
+    player_id BIGINT PRIMARY KEY,
+    team_id INT,
+    first_name VARCHAR(100),
+    last_name VARCHAR(100),
+    position VARCHAR(10),
+    jersey_number INT,
+    birth_date DATE,
+    birth_country VARCHAR(10),
+    height_cm REAL,
+    weight_kg REAL,
+    shoots_catches VARCHAR(5),
+    headshot_url TEXT,
+    FOREIGN KEY (team_id) REFERENCES teams(team_id)
+);
+
+11. List teams for roster loading
+Description: Gets team IDs and abbreviations before roster requests.
+SELECT team_id, team_abbrev FROM teams;
+
+12. Insert player records
+Description: Inserts player records using named parameters.
+INSERT INTO players (
+    player_id, team_id, first_name, last_name, position,
+    jersey_number, birth_date, birth_country, height_cm,
+    weight_kg, shoots_catches, headshot_url
+)
+VALUES (
+    %(player_id)s, %(team_id)s, %(first_name)s, %(last_name)s,
+    %(position)s, %(jersey_number)s, %(birth_date)s,
+    %(birth_country)s, %(height_cm)s, %(weight_kg)s,
+    %(shoots_catches)s, %(headshot_url)s
+);
+
+13. Create games table
+Description: Creates the table for NHL games.
+CREATE TABLE IF NOT EXISTS games (
+    game_id BIGINT PRIMARY KEY,
+    season INT,
+    game_type INT,
+    game_date DATE,
+    home_team_id INT,
+    away_team_id INT,
+    home_score INT,
+    away_score INT,
+    game_state VARCHAR(20),
+    venue_name VARCHAR(100),
+    FOREIGN KEY (home_team_id) REFERENCES teams(team_id),
+    FOREIGN KEY (away_team_id) REFERENCES teams(team_id)
+);
+
+14. Find home or away team ID
+Description: Finds a local team ID from a game abbreviation.
+SELECT team_id FROM teams WHERE team_abbrev = %s;
+
+15. Insert game records
+Description: Inserts games and ignores duplicate game IDs.
+INSERT IGNORE INTO games (
+    game_id, season, game_type, game_date, home_team_id,
+    away_team_id, home_score, away_score, game_state, venue_name
+)
+VALUES (
+    %(game_id)s, %(season)s, %(game_type)s, %(game_date)s,
+    %(home_team_id)s, %(away_team_id)s, %(home_score)s,
+    %(away_score)s, %(game_state)s, %(venue_name)s
+);

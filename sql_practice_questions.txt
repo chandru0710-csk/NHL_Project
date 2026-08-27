@@ -1,0 +1,108 @@
+15 SQL PRACTICE QUESTIONS
+==========================
+
+The app displays each question. When a question is opened, its answer data is shown. 
+
+1. List all NHL teams alphabetically.
+Description: Shows each team and abbreviation.
+Answer query:
+SELECT team_name, team_abbrev FROM teams ORDER BY team_name;
+
+2. Count the total number of teams.
+Description: Returns the number of teams.
+Answer query:
+SELECT COUNT(*) AS total_teams FROM teams;
+
+3. Show all players with their team names.
+Description: Joins players with their current teams.
+Answer query:
+SELECT CONCAT(p.first_name, ' ', p.last_name) AS player, t.team_name
+FROM players p JOIN teams t ON t.team_id = p.team_id ORDER BY player;
+
+4. Find the number of players at each position.
+Description: Counts players by position.
+Answer query:
+SELECT position, COUNT(*) AS player_count
+FROM players GROUP BY position ORDER BY player_count DESC;
+
+5. Find the top 10 goal scorers for a selected season.
+Description: Lists the ten highest goal totals in season 20242025.
+Answer query:
+SELECT CONCAT(p.first_name, ' ', p.last_name) AS player, s.goals
+FROM skater_stats s JOIN players p ON p.player_id = s.player_id
+WHERE s.season = '20242025' ORDER BY s.goals DESC LIMIT 10;
+
+6. Find the top 10 players by points for a selected season.
+Description: Lists the ten highest point totals in season 20242025.
+Answer query:
+SELECT CONCAT(p.first_name, ' ', p.last_name) AS player, s.points
+FROM skater_stats s JOIN players p ON p.player_id = s.player_id
+WHERE s.season = '20242025' ORDER BY s.points DESC LIMIT 10;
+
+7. Find the player with the most assists in all seasons.
+Description: Adds assists across all stored seasons and returns the leader.
+Answer query:
+SELECT CONCAT(p.first_name, ' ', p.last_name) AS player,
+SUM(s.assists) AS total_assists
+FROM skater_stats s JOIN players p ON p.player_id = s.player_id
+GROUP BY p.player_id, p.first_name, p.last_name
+ORDER BY total_assists DESC LIMIT 1;
+
+8. Show the top five goalies by save percentage for a selected season.
+Description: Lists the five best save percentages in season 20242025.
+Answer query:
+SELECT CONCAT(p.first_name, ' ', p.last_name) AS player, g.save_pct
+FROM goalie_season_stats g JOIN players p ON p.player_id = g.player_id
+WHERE g.season = '20242025' AND g.save_pct IS NOT NULL
+ORDER BY g.save_pct DESC LIMIT 5;
+
+9. Show teams ordered by wins for a selected season.
+Description: Lists teams by wins in season 20252026.
+Answer query:
+SELECT t.team_name, s.wins
+FROM standings s JOIN teams t ON t.team_id = s.team_id
+WHERE s.season = '20252026' ORDER BY s.wins DESC;
+
+10. Show the top five teams by points for a selected season.
+Description: Lists the five teams with the most points in season 20252026.
+Answer query:
+SELECT t.team_name, s.points
+FROM standings s JOIN teams t ON t.team_id = s.team_id
+WHERE s.season = '20252026' ORDER BY s.points DESC LIMIT 5;
+
+11. Calculate total goals scored by each team in game statistics.
+Description: Adds game-stat goals for each team.
+Answer query:
+SELECT t.team_name, SUM(gs.goals) AS total_goals
+FROM game_stats gs JOIN teams t ON t.team_id = gs.team_id
+GROUP BY t.team_id, t.team_name ORDER BY total_goals DESC;
+
+12. Count completed games by season.
+Description: Counts final games for every season.
+Answer query:
+SELECT season, COUNT(*) AS completed_games
+FROM games WHERE game_state = 'FINAL'
+GROUP BY season ORDER BY season DESC;
+
+13. Find the highest-scoring completed game.
+Description: Finds the final game with the most combined goals.
+Answer query:
+SELECT game_id, game_date, home_score, away_score,
+home_score + away_score AS total_goals
+FROM games WHERE game_state = 'FINAL'
+ORDER BY total_goals DESC LIMIT 1;
+
+14. Show each team's home and away wins in the standings.
+Description: Displays home wins and away wins for teams in season 20252026.
+Answer query:
+SELECT t.team_name, s.home_wins, s.away_wins
+FROM standings s JOIN teams t ON t.team_id = s.team_id
+WHERE s.season = '20252026' ORDER BY t.team_name;
+
+15. Find players who scored at least 40 goals in a selected season.
+Description: Lists players with at least 40 goals in season 20242025.
+Answer query:
+SELECT CONCAT(p.first_name, ' ', p.last_name) AS player, s.goals
+FROM skater_stats s JOIN players p ON p.player_id = s.player_id
+WHERE s.season = '20242025' AND s.goals >= 40
+ORDER BY s.goals DESC;

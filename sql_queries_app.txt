@@ -1,0 +1,222 @@
+SQL QUERIES USED IN APP.PY
+===========================
+
+%s is a safe value supplied by Python.
+
+HOME PAGE
+---------
+
+1. Count teams
+Description: Counts all teams.
+SELECT COUNT(*) FROM teams;
+
+2. Count players
+Description: Counts all players.
+SELECT COUNT(*) FROM players;
+
+3. Count games
+Description: Counts distinct games in game statistics.
+SELECT COUNT(DISTINCT game_id) FROM game_stats;
+
+4. Count goals
+Description: Adds all goals in game statistics.
+SELECT COALESCE(SUM(goals), 0) FROM game_stats;
+
+5. Top scorer
+Description: Finds the player with the most goals.
+SELECT CONCAT(p.first_name, ' ', p.last_name)
+FROM skater_stats s JOIN players p ON p.player_id = s.player_id
+ORDER BY s.goals DESC LIMIT 1;
+
+6. Best goal saver
+Description: Finds the goalie with the best save percentage.
+SELECT CONCAT(p.first_name, ' ', p.last_name)
+FROM goalie_season_stats g JOIN players p ON p.player_id = g.player_id
+WHERE g.save_pct IS NOT NULL ORDER BY g.save_pct DESC LIMIT 1;
+
+7. League leader team
+Description: Finds the team with the most points.
+SELECT t.team_name FROM standings s
+JOIN teams t ON t.team_id = s.team_id
+ORDER BY s.points DESC LIMIT 1;
+
+8. Most assists
+Description: Finds the player with the most assists.
+SELECT CONCAT(p.first_name, ' ', p.last_name)
+FROM skater_stats s JOIN players p ON p.player_id = s.player_id
+ORDER BY s.assists DESC LIMIT 1;
+
+STANDINGS PAGE
+--------------
+
+9. List conferences
+Description: Lists all conferences.
+SELECT DISTINCT conference_name FROM teams ORDER BY conference_name;
+
+10. List divisions
+Description: Lists all divisions.
+SELECT DISTINCT division_name FROM teams ORDER BY division_name;
+
+11. Divisions in a conference
+Description: Lists divisions in the selected conference.
+SELECT DISTINCT division_name FROM teams
+WHERE conference_name = %s ORDER BY division_name;
+
+12. Load standings
+Description: Loads teams and their standings ordered by points.
+SELECT t.logo_url AS Logo, t.team_name AS Team,
+t.conference_name AS Conference, t.division_name AS Division,
+s.games_played AS GP, s.wins AS W, s.losses AS L,
+s.ot_losses AS OT_L, s.points AS Points, s.goals_for AS GF,
+s.goals_against AS GA, s.home_wins AS Home_Wins,
+s.away_wins AS Away_Wins
+FROM standings s JOIN teams t ON t.team_id = s.team_id
+ORDER BY s.points DESC;
+
+TEAM INFO PAGE
+--------------
+
+13. List teams
+Description: Lists teams for the team selector.
+SELECT team_name FROM teams ORDER BY team_name;
+
+14. Selected team details
+Description: Loads details for the selected team.
+SELECT team_id, team_name, team_abbrev, conference_name,
+division_name, logo_url FROM teams WHERE team_name = %s;
+
+15. Current team standing
+Description: Loads the latest standing for one team.
+SELECT games_played, wins, losses, ot_losses, points
+FROM standings WHERE team_id = %s
+ORDER BY season DESC LIMIT 1;
+
+16. Team roster
+Description: Loads players and total goals for one team.
+SELECT p.first_name, p.last_name, p.position, p.jersey_number,
+CAST(COALESCE(SUM(s.goals), 0) AS UNSIGNED) AS total_goals
+FROM players p LEFT JOIN skater_stats s ON s.player_id = p.player_id
+WHERE p.team_id = %s
+GROUP BY p.player_id, p.first_name, p.last_name, p.position, p.jersey_number
+ORDER BY p.position, p.last_name;
+
+LEADERBOARDS PAGE
+-----------------
+
+17. Available seasons
+Description: Lists seasons available in the database.
+SELECT season FROM skater_stats
+UNION SELECT season FROM goalie_season_stats
+UNION SELECT season FROM standings ORDER BY season DESC;
+
+18. Goals leaderboard
+Description: Shows the top 50 skaters by goals.
+SELECT CONCAT(p.first_name, ' ', p.last_name) AS Player, s.goals AS Goals
+FROM skater_stats s JOIN players p ON p.player_id = s.player_id
+[WHERE s.season = %s] ORDER BY s.goals DESC LIMIT 50;
+
+19. Assists leaderboard
+Description: Shows the top 50 skaters by assists.
+SELECT CONCAT(p.first_name, ' ', p.last_name) AS Player, s.assists AS Assists
+FROM skater_stats s JOIN players p ON p.player_id = s.player_id
+[WHERE s.season = %s] ORDER BY s.assists DESC LIMIT 50;
+
+20. Points leaderboard
+Description: Shows the top 50 skaters by points.
+SELECT CONCAT(p.first_name, ' ', p.last_name) AS Player, s.points AS Points
+FROM skater_stats s JOIN players p ON p.player_id = s.player_id
+[WHERE s.season = %s] ORDER BY s.points DESC LIMIT 50;
+
+21. Penalty minutes leaderboard
+Description: Shows the top 50 skaters by penalty minutes.
+SELECT CONCAT(p.first_name, ' ', p.last_name) AS Player,
+s.penalty_min AS `Penalty Minutes`
+FROM skater_stats s JOIN players p ON p.player_id = s.player_id
+[WHERE s.season = %s] ORDER BY s.penalty_min DESC LIMIT 50;
+
+22. Shots leaderboard
+Description: Shows the top 50 skaters by shots.
+SELECT CONCAT(p.first_name, ' ', p.last_name) AS Player, s.shots AS Shots
+FROM skater_stats s JOIN players p ON p.player_id = s.player_id
+[WHERE s.season = %s] ORDER BY s.shots DESC LIMIT 50;
+
+23. Save percentage leaderboard
+Description: Shows the top 50 goalies by save percentage.
+SELECT CONCAT(p.first_name, ' ', p.last_name) AS Player,
+g.save_pct AS save_pct_value
+FROM goalie_season_stats g JOIN players p ON p.player_id = g.player_id
+WHERE g.save_pct IS NOT NULL [AND g.season = %s]
+ORDER BY g.save_pct DESC LIMIT 50;
+
+24. Goalie wins leaderboard
+Description: Shows the top 50 goalies by wins.
+SELECT CONCAT(p.first_name, ' ', p.last_name) AS Player, g.wins AS Wins
+FROM goalie_season_stats g JOIN players p ON p.player_id = g.player_id
+[WHERE g.season = %s] ORDER BY g.wins DESC LIMIT 50;
+
+25. Team wins leaderboard
+Description: Shows teams by wins.
+SELECT t.team_name AS Team, s.wins AS Wins
+FROM standings s JOIN teams t ON t.team_id = s.team_id
+[WHERE s.season = %s] ORDER BY s.wins DESC LIMIT 50;
+
+26. Team points leaderboard
+Description: Shows teams by points.
+SELECT t.team_name AS Team, s.points AS Points
+FROM standings s JOIN teams t ON t.team_id = s.team_id
+[WHERE s.season = %s] ORDER BY s.points DESC LIMIT 50;
+
+PLAYER SEARCH PAGE
+------------------
+
+27. List players
+Description: Lists players for the player selector.
+SELECT player_id, first_name, last_name, position, headshot_url
+FROM players ORDER BY first_name, last_name;
+
+28. Player totals
+Description: Calculates totals for one player.
+SELECT CAST(COALESCE(SUM(goals), 0) AS UNSIGNED),
+CAST(COALESCE(SUM(assists), 0) AS UNSIGNED),
+CAST(COALESCE(SUM(points), 0) AS UNSIGNED),
+CAST(COALESCE(SUM(games_played), 0) AS UNSIGNED)
+FROM skater_stats WHERE player_id = %s;
+
+MATCH RESULTS PAGE
+------------------
+
+29. List teams for match search
+Description: Lists team names and logos.
+SELECT team_id, team_name, logo_url FROM teams ORDER BY team_name;
+
+30. List team seasons
+Description: Lists seasons for the selected team.
+SELECT DISTINCT season FROM games
+WHERE home_team_id = %s OR away_team_id = %s
+ORDER BY season DESC;
+
+31. Home team matches
+Description: Loads completed games where the selected team was home.
+SELECT g.game_date, g.season, g.venue_name,
+t.team_name AS opponent,
+CONCAT(g.home_score, ' - ', g.away_score) AS match_score,
+CASE WHEN g.home_score > g.away_score THEN 'W'
+WHEN g.home_score < g.away_score THEN 'L' ELSE 'T' END AS result
+FROM games g JOIN teams t ON t.team_id = g.away_team_id
+WHERE g.home_team_id = %s AND g.game_state = 'FINAL';
+
+32. Away team matches
+Description: Loads completed games where the selected team was away.
+SELECT g.game_date, g.season, g.venue_name,
+t.team_name AS opponent,
+CONCAT(g.away_score, ' - ', g.home_score) AS match_score,
+CASE WHEN g.away_score > g.home_score THEN 'W'
+WHEN g.away_score < g.home_score THEN 'L' ELSE 'T' END AS result
+FROM games g JOIN teams t ON t.team_id = g.home_team_id
+WHERE g.away_team_id = %s AND g.game_state = 'FINAL';
+
+33. Combined match results
+Description: Combines home and away matches and filters by season when selected.
+SELECT game_date, venue_name, opponent, match_score, result
+FROM (home query UNION ALL away query) AS past_matches
+WHERE 1 = 1 [AND season = %s] ORDER BY game_date DESC;

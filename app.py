@@ -295,7 +295,7 @@ elif page == "♧  Team Info":
 		st.info("No teams found.")
 
 elif page == "</>  SQL Query":
-	st.header("SQL Query")
+	st.header("🔍 SQL Query Explorer")
 
 	sql_questions = [
 		{
@@ -375,17 +375,41 @@ elif page == "</>  SQL Query":
 		},
 	]
 
-	st.caption("Select a question to display its answer data.")
-	for question in sql_questions:
-		with st.expander(f"{question['S.No']}. {question['Question']}"):
-			cursor.execute(question["Answer SQL Query"])
-			answer_rows = cursor.fetchall()
-			answer_columns = [column[0] for column in cursor.description]
+	
+	query_options = [f"{q['S.No']}. {q['Question']}" for q in sql_questions]
+	
+	st.markdown("**Pick a ready-made query below, or choose Custom Query to write your own**")
+	
+	col1, col2 = st.columns([3, 1])
+	with col1:
+		selected_query = st.selectbox("Choose a query", query_options + ["Custom Query"], label_visibility="collapsed")
+	
+	st.markdown("**SQL Query**")
+	
+	if selected_query == "Custom Query":
+		query_text = st.text_area("", value="", height=120, label_visibility="collapsed")
+	else:
+		# Get the selected question's query
+		question_index = int(selected_query.split(".")[0]) - 1
+		query_text = st.text_area("", value=sql_questions[question_index]["Answer SQL Query"], height=120, label_visibility="collapsed")
+	
+	if st.button("▶ Run Query"):
+		try:
+			cursor.execute(query_text)
+			result_rows = cursor.fetchall()
+			result_columns = [column[0] for column in cursor.description]
+			
+			
+			st.success(f"✓ {len(result_rows)} rows returned")
+			
+			
 			st.dataframe(
-				pd.DataFrame(answer_rows, columns=answer_columns),
+				pd.DataFrame(result_rows, columns=result_columns),
 				hide_index=True,
 				width="stretch",
 			)
+		except Exception as e:
+			st.error(f"Error executing query: {str(e)}")
 
 elif page == "▥  Leaderboards":
 	st.header("📊 Leaderboards")
